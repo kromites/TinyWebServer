@@ -1,7 +1,0 @@
-/mnt/d/code/cpp_code/TinyWebServer/out/build/WSL-GCC-Debug/CMakeFiles/rebuild_cache.dir
-/mnt/d/code/cpp_code/TinyWebServer/out/build/WSL-GCC-Debug/CMakeFiles/T1.dir
-/mnt/d/code/cpp_code/TinyWebServer/out/build/WSL-GCC-Debug/CMakeFiles/main.dir
-/mnt/d/code/cpp_code/TinyWebServer/out/build/WSL-GCC-Debug/CMakeFiles/logTest.dir
-/mnt/d/code/cpp_code/TinyWebServer/out/build/WSL-GCC-Debug/CMakeFiles/edit_cache.dir
-/mnt/d/code/cpp_code/TinyWebServer/out/build/WSL-GCC-Debug/CMakeFiles/logerTest.dir
-/mnt/d/code/cpp_code/TinyWebServer/out/build/WSL-GCC-Debug/CMakeFiles/test.dir
