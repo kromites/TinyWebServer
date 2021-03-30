@@ -18,5 +18,6 @@ add_executable(logTest "base/LogStream.h" "base/LogStream.cpp" "test/testLogStre
 add_executable(logerTest "base/LogStream.h" "base/LogStream.cpp" "base/Logger.h" "base/Logger.cpp" "test/testLogger.cpp" )
 add_executable(T1 "test/testLogStream.cpp" )
 add_executable(main "TestServer.cpp" ${LOG} ${Address} ${Socket} ${Poller} ${Buffer} )
+add_executable(testTid "test/testTid.cpp")
 
 # TODO: 如有需要，请添加测试并安装目标。
