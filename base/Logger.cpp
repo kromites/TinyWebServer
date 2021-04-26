@@ -1,6 +1,9 @@
 #include "Logger.h"
+#include "CurrentThread.h"
+
 #include <time.h>
 #include <string.h>
+
 
 inline LogStream& operator<<(LogStream& s, Logger::SourceFile& file) {
 	s.append(file.data_, file.size_);
@@ -33,7 +36,7 @@ Logger::MyLogger::MyLogger(LogLevel level, int savedErrno, SourceFile& file, int
 	level_(level), file_(file), line_(line) {
 	// stream_.append(t, strlen(t)-1);
 	stream_ << "Now Time: " << GetCurTime();
-
+	stream_ << "In Thread: tid = " << CurrentThread::tid();
 	stream_ << "  "  << levelToString(level) << " " ;
 	if(level >= LogLevel::ERROR) {
 		stream_ << " (errno: " << savedErrno << " " <<strerror(savedErrno) << " ) ";

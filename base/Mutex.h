@@ -17,7 +17,7 @@ public:
 
 	void unlock();
 
-	auto getPthreadMutex();
+	pthread_mutex_t* getPthreadMutex();
 
 private:
 	pthread_mutex_t mutex_;

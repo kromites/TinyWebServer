@@ -1,50 +1,45 @@
 #include "./base/Logger.h"
+#include "./base/Thread.h"
+
 #include "Address.h"
+#include "Acceptor.h"
 #include "Socket.h"
 #include "Poller.h"
 #include "Buffer.h"
 
+// #include <thread>
 #include <strings.h>
 #include <unistd.h>
 #include <sys/socket.h>
-#include <sys/epoll.h>
 
 
-constexpr int MaxSize = 4096;
-constexpr int MaxEvents = 20;
-
-
-void addNewConn(Poller& poller, int listenfd) {
-	LOG_TRACE << "add new conn";
-	while(true) {
-		std::pair<int, Address> ret = Accept(listenfd);
-		int connfd = ret.first;	
-		Address peer = ret.second;
-
-		if (connfd > 0) {
-			setNonBlock(connfd);
-			LOG_INFO << "new connection from " << peer.toString();
-		}
-		else {
-			if (errno == EAGAIN || errno == EWOULDBLOCK) {
-				LOG_DEBUG << "accept will be block";
-				break;
-			}
-			else {
-				LOG_ERROR << "accept returns error from connection fd : " << connfd;
-				break;
-			}
-		}
-		
-		// on connection handle the epoll_event
-		epoll_event event{};
-		bzero(&event, sizeof event);
-
-		event.events = EPOLLIN;
-		event.data.fd = connfd;
-		poller.add_fd(event);
-	}
-}
+// void addNewConn(Poller& poller, int listenfd) {
+// 	LOG_TRACE << "add new conn";
+// 	while(true) {
+// 		std::pair<int, Address> ret = Accept(listenfd);
+// 		int connfd = ret.first;	
+// 		Address peer = ret.second;
+//
+// 		if (connfd > 0) {
+// 			setNonBlock(connfd);
+// 			LOG_INFO << "new connection from " << peer.toString();
+// 		}
+// 		else {
+// 			if (errno == EAGAIN || errno == EWOULDBLOCK) {
+// 				LOG_DEBUG << "accept will be block";
+// 				break;
+// 			}
+// 			else {
+// 				LOG_ERROR << "accept returns error from connection fd : " << connfd;
+// 				break;
+// 			}
+// 		}
+// 		
+// 		// on connection handle the epoll_event
+// 		
+// 		poller.add_fd(connfd);
+// 	}
+// }
 
 void handleWrite(int connfd, Buffer buffer, int readlen) {
 	while(true) {
@@ -75,17 +70,15 @@ void echoToPeer(int connfd, Buffer buffer, int readLen) {
 
 void removeConnection(int connfd, Poller& poller) {
 	shutdown(connfd, SHUT_RDWR);
-
 	epoll_event event{};
 	event.data.fd = connfd;
 	event.events = EPOLLIN;
 	
-	poller.del_fd(event);
+	poller.del_fd(connfd);
 }
 
 void handleRead(int connfd, Poller& poller) {
 	LOG_TRACE << "handle read";
-	// char Buffer[MaxSize];
 	Buffer buffer;
 	
 	while (true) {
@@ -118,46 +111,87 @@ void handleRead(int connfd, Poller& poller) {
 	
 }
 
+std::function<void(int)> acceptCallback;
 
-int main() {
-	auto servAddr = Address::getListenAddress(23456);
-
-	Logger::setLogLevel(Logger::LogLevel::DEBUG);
-	
-	auto listenfd = tcpSocket();
-
-	LOG_INFO << "listenfd : " << listenfd;
-	
-	Bind(listenfd, servAddr);
-
-	Listen(listenfd, 10);
-	// todo add class buffer instead of char* buffer
-	// Buffer buffer;
-	
-	epoll_event ev;
+// no arg
+void acceptThreadFunc(Acceptor& acceptor) {
+	Poller acceptPoller;
 	std::vector<epoll_event> events;
-	Poller poller;
+	acceptPoller.add_fd(acceptor.getListenFd());
+	while (true) {
+		 
+		// get new connection
+		// add new connection to epoll			
+		acceptPoller.poll(events, -1);
+		acceptor.onAccept();
+	}
+}
 
-	
-	bzero(&ev, sizeof ev);
-	ev.events = EPOLLIN;
-	ev.data.fd = listenfd;
-	
-	poller.add_fd(ev);
-	
-	LOG_INFO << "server running";
-	while(true) {
-		LOG_DEBUG << "new round start";
-		const auto numEvents = poller.poll(events, -1);
-		for(int i=0; i < numEvents; ++i) {
-			if(events[i].data.fd == listenfd) {
- 				addNewConn(poller, listenfd);
-			}else {
-				handleRead(events[i].data.fd, poller);
-			}
+
+void ioThreadFunc(Poller& ioPoller) {
+	while (true) {
+		std::vector<epoll_event> events;
+		auto numEvents = ioPoller.poll(events, -1);
+
+		for (int i = 0; i < numEvents; ++i) {
+			handleRead(events[i].data.fd, ioPoller);
 		}
 	}
-	sleep(60);
+}
+
+
+
+int main() {
+	
+	Logger::setLogLevel(Logger::LogLevel::TRACE);
+	Poller ioPoller;
+
+	Thread t1([&ioPoller]() {
+		ioThreadFunc(ioPoller);
+	});
+	t1.start();
+
+	
+	acceptCallback = [&ioPoller](int connfd) {
+		ioPoller.add_fd(connfd);
+	};
+	Acceptor acceptor(23456, acceptCallback);
+	// acceptor.setFuncPtr(acceptCallback);
+	
+	acceptThreadFunc(acceptor);
+	
+
+	t1.join();
+	// auto servAddr = Address::getListenAddress(23456);
+	//
+	//
+	// auto listenfd = tcpSocket();
+	//
+	// LOG_INFO << "listenfd : " << listenfd;
+	//
+	// Bind(listenfd, servAddr);
+	//
+	// Listen(listenfd, 10);
+	//
+	// std::vector<epoll_event> events;
+	// Poller poller;
+	//
+	//
+	// poller.add_fd(listenfd);
+	//
+	// LOG_INFO << "server running";
+	// while(true) {
+	// 	LOG_DEBUG << "new round start";
+	// 	const auto numEvents = poller.poll(events, -1);
+	// 	for(int i=0; i < numEvents; ++i) {
+	// 		if(events[i].data.fd == listenfd) {
+ // 				addNewConn(poller, listenfd);
+	// 		}else {
+	// 			handleRead(events[i].data.fd, poller);
+	// 		}
+	// 	}
+	// }
+	// sleep(60);
 }
 
 // todo 21/3/18: complete the logger, and make the epoll to manage the connection
@@ -171,4 +205,8 @@ int main() {
 
 // todo 21/3/24 start make the IO non-blocking
 
-// todo read and right become IO non-block
+// todo read and write become IO non-block
+
+// todo add feature in log, think how to make thread pool?
+
+// todo fix the log_fatal, build eventloop, channel, and eventthread?
