@@ -17,80 +17,80 @@ Poller::~Poller() {
 	
 }
 
-void Poller::poll_ctl(epoll_event ev , int opt) const {
-	int ret;
-	LOG_DEBUG << "epoll ctl: "<<opt<< " epollfd_ : " << epollfd_ << "  ev.data.fd :" << ev.data.fd;
- 	if (opt == EPOLL_CTL_DEL) {
-		ret = epoll_ctl(epollfd_, opt, ev.data.fd, nullptr);
-	}
-	else {
-		ret = epoll_ctl(epollfd_, opt, ev.data.fd, &ev);
-	}
-
-	if (ret < 0)
-		LOG_ERROR << "the return of poll_ctl is error";
-}
-
-void Poller::fillActiveEvents(int activeNumEvents, std::vector<epoll_event>& activeEvents) const {
-	assert(activeNumEvents <= static_cast<int>(events_.size()));
-	activeEvents.clear();
-	for (int i = 0; i < activeNumEvents; ++i) {
-		activeEvents.push_back(events_[i]);
-	}
-}
-
-epoll_event Poller::createEvent(int fd) const {
-	epoll_event event{};
-	bzero(&event, sizeof event);
-	event.events = EPOLLIN;
-	event.data.fd = fd;
-	return event;
-}
-
-
-int Poller::poll(std::vector<epoll_event>& activeEvents, int timeouts) {
-	const auto activeNumEvents = epoll_wait(epollfd_, events_.data(), static_cast<int>(events_.size()), timeouts);
-
-	LOG_INFO << "epoll_wait return " << activeNumEvents << " events active";
-	if (activeNumEvents == -1) {
-		LOG_ERROR << "epoll_wait error";
-	}
-	else if (activeNumEvents == 0) {
-		LOG_INFO << "no connection accept";
-	}
-	else {
-		fillActiveEvents(activeNumEvents, activeEvents);
-		if(events_.size() == activeNumEvents) {
-			LOG_INFO << "epoll vector reserve double";
-			events_.reserve(activeNumEvents * 2);
-		}
-	}
-	return activeNumEvents;
-}
-
+// void Poller::poll_ctl(epoll_event ev , int opt) const {
+// 	int ret;
+// 	LOG_DEBUG << "epoll ctl: "<<opt<< " epollfd_ : " << epollfd_ << "  ev.data.fd :" << ev.data.fd;
+//  	if (opt == EPOLL_CTL_DEL) {
+// 		ret = epoll_ctl(epollfd_, opt, ev.data.fd, nullptr);
+// 	}
+// 	else {
+// 		ret = epoll_ctl(epollfd_, opt, ev.data.fd, &ev);
+// 	}
+//
+// 	if (ret < 0)
+// 		LOG_ERROR << "the return of poll_ctl is error";
+// }
+//
+// void Poller::fillActiveEvents(int activeNumEvents, std::vector<epoll_event>& activeEvents) const {
+// 	assert(activeNumEvents <= static_cast<int>(events_.size()));
+// 	activeEvents.clear();
+// 	for (int i = 0; i < activeNumEvents; ++i) {
+// 		activeEvents.push_back(events_[i]);
+// 	}
+// }
+//
+// epoll_event Poller::createEvent(int fd) const {
+// 	epoll_event event{};
+// 	bzero(&event, sizeof event);
+// 	event.events = EPOLLIN;
+// 	event.data.fd = fd;
+// 	return event;
+// }
+//
+//
+// int Poller::poll(std::vector<epoll_event>& activeEvents, int timeouts) {
+// 	const auto activeNumEvents = epoll_wait(epollfd_, events_.data(), static_cast<int>(events_.size()), timeouts);
+//
+// 	LOG_INFO << "epoll_wait return " << activeNumEvents << " events active";
+// 	if (activeNumEvents == -1) {
+// 		LOG_ERROR << "epoll_wait error";
+// 	}
+// 	else if (activeNumEvents == 0) {
+// 		LOG_INFO << "no connection accept";
+// 	}
+// 	else {
+// 		fillActiveEvents(activeNumEvents, activeEvents);
+// 		if(events_.size() == activeNumEvents) {
+// 			LOG_INFO << "epoll vector reserve double";
+// 			events_.reserve(activeNumEvents * 2);
+// 		}
+// 	}
+// 	return activeNumEvents;
+// }
+//
 bool Poller::checkFdInEpoll(int fd) {
 	return eventsMap_.count(fd);
 }
-
-void Poller::add_fd(int fd) {
-	LOG_TRACE << "insert a event in the epoll vector";
-	epoll_event ev = createEvent(fd);
-	poll_ctl(ev, EPOLL_CTL_ADD);
-	eventsMap_[fd] = ev;
-}
-
-void Poller::del_fd(int fd) {
-	LOG_TRACE << "delete a event in the epoll vector";
-	epoll_event ev = createEvent(fd);
-	poll_ctl(ev, EPOLL_CTL_DEL);
-	eventsMap_.erase(fd);
-}
-
-void Poller::mod_fd(int fd) {
-	LOG_TRACE << "modify a event in the epoll vector";
-	epoll_event ev = createEvent(fd);
-	poll_ctl(ev, EPOLL_CTL_MOD);
-}
+//
+// void Poller::add_fd(int fd) {
+// 	LOG_TRACE << "insert a event in the epoll vector";
+// 	epoll_event ev = createEvent(fd);
+// 	poll_ctl(ev, EPOLL_CTL_ADD);
+// 	eventsMap_[fd] = ev;
+// }
+//
+// void Poller::del_fd(int fd) {
+// 	LOG_TRACE << "delete a event in the epoll vector";
+// 	epoll_event ev = createEvent(fd);
+// 	poll_ctl(ev, EPOLL_CTL_DEL);
+// 	eventsMap_.erase(fd);
+// }
+//
+// void Poller::mod_fd(int fd) {
+// 	LOG_TRACE << "modify a event in the epoll vector";
+// 	epoll_event ev = createEvent(fd);
+// 	poll_ctl(ev, EPOLL_CTL_MOD);
+// }
 
 /*
  *	Use Channel to replace the epoll_event;
@@ -101,11 +101,16 @@ void Poller::mod_fd(int fd) {
 
 //todo replace INT with TIMESTAMP
 int Poller::poll(std::vector<Channel*>& activeChannels, int timeouts) {
+	LOG_TRACE << "the number of events in poller : " << channelMap_.size();
+	
 	const auto activeNumEvents = epoll_wait(epollfd_, events_.data(), static_cast<int>(events_.size()), timeouts);
-
+	const auto err = errno;
 	LOG_INFO << "epoll_wait return " << activeNumEvents << " events active";
 	if (activeNumEvents == -1) {
-		LOG_ERROR << "epoll_wait error";
+		if (err != EINTR) {
+			errno = err;
+			LOG_FATAL << "Poller::poll()";
+		}
 	}
 	else if (activeNumEvents == 0) {
 		LOG_INFO << "no connection accept";

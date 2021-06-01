@@ -1,17 +1,9 @@
 #pragma once
-
 #include "LogStream.h"
+#include "Timestamp.h"
 
 #include <cstring>
 
-// class TimeStamp {
-// 	static int cnt;
-// 	TimeStamp() {
-// 		++cnt;
-// 	}
-// };
-
-// int TimeStamp::cnt = 0;
 
 
 //todo complete ctr and log_level.
@@ -92,7 +84,8 @@ private:
 		MyLogger(LogLevel level, int savedErrno, SourceFile& file, int line);
 	
 		void finish();
-		
+
+		Timestamp time_;
 		LogLevel level_;
 		SourceFile file_;
 		int line_;

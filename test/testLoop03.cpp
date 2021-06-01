@@ -35,4 +35,5 @@ int main() {
 	loop.loop();
 
 	::close(timefd);
+	LOG_TRACE << "end clock";
 }

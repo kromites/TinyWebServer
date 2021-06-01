@@ -6,7 +6,7 @@ class EventLoop;
 
 /*
  * Channel object manage the IO events of One fd.
- * but this object don't own this fd, and when it destors, the fd isn't closed.
+ * but this object don't own this fd, and when it destructs, the fd isn't closed.
  * function: Channel object can distribute different IO events as different callbacks. suck as readCallback, writeCallback.
  *
  * feature: channel member function can only run in IO thread, so update the member variable without lock.
@@ -17,6 +17,8 @@ public:
 	typedef std::function<void()> EventCallback;
 
 	Channel(EventLoop* loop, int fd);
+
+	~Channel();
 
 	void handleEvent();
 	void setReadCallback(const EventCallback& cb);
@@ -70,6 +72,7 @@ private:
 	int revents_;             /* careful IO event */
 	int index_;               /* used by Poller */
 
+	bool eventHandling_;
 	EventCallback readCallback_;
 	EventCallback writeCallback_;
 	EventCallback errorCallback_;

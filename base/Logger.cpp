@@ -14,18 +14,6 @@ inline LogStream& operator<<(LogStream& s, Logger::SourceFile& file) {
 // 	stream_ << levelToString(level) << " " << file_<< " in line " << line << ":  ";
 // }
 
-static const char* GetCurTime() {
-	time_t rawtime;
-	tm* timeinfo;
-
-	time(&rawtime);
-	timeinfo = localtime(&rawtime);
-	auto* str = asctime(timeinfo);
-	const auto line_break = strrchr(str, '\n');
-	*line_break = ' ';
-	return str;
-}
-
 Logger::LogLevel g_logLevel = Logger::LogLevel::TRACE;
 
 void Logger::setLogLevel(LogLevel level) {
@@ -33,10 +21,10 @@ void Logger::setLogLevel(LogLevel level) {
 }
 
 Logger::MyLogger::MyLogger(LogLevel level, int savedErrno, SourceFile& file, int line) :
-	level_(level), file_(file), line_(line) {
+	time_(Timestamp::now()),level_(level), file_(file), line_(line) {
 	// stream_.append(t, strlen(t)-1);
-	stream_ << "Now Time: " << GetCurTime();
-	stream_ << "In Thread: tid = " << CurrentThread::tid();
+	stream_ << "Now Time: " << time_.toFormattedString();
+	stream_ << " tid = " << CurrentThread::tid();
 	stream_ << "  "  << levelToString(level) << " " ;
 	if(level >= LogLevel::ERROR) {
 		stream_ << " (errno: " << savedErrno << " " <<strerror(savedErrno) << " ) ";

@@ -12,7 +12,7 @@ public:
 	Poller();
 	~Poller();
 
-	int poll(std::vector<epoll_event>&, int);
+	// int poll(std::vector<epoll_event>&, int);
 	
 	int getEpollfd() const {
 		return epollfd_;
@@ -20,9 +20,9 @@ public:
 
 	bool checkFdInEpoll(int);
 	
-	void add_fd(int fd);
-	void del_fd(int fd);
-	void mod_fd(int fd);
+	// void add_fd(int fd);
+	// void del_fd(int fd);
+	// void mod_fd(int fd);
 
 	// channel
 	int poll(std::vector<Channel*>&, int);
@@ -35,7 +35,7 @@ public:
 private:
 	void poll_ctl(epoll_event, int) const;
 	void fillActiveEvents(int, std::vector<epoll_event>&) const;
-	epoll_event createEvent(int fd) const;
+	// epoll_event createEvent(int fd) const;
 
 	std::unordered_map<int, epoll_event> eventsMap_;
 	std::vector<epoll_event> events_;        // epoll_wait

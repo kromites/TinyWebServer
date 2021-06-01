@@ -5,20 +5,31 @@ cmake_minimum_required (VERSION 3.8)
 
 project ("TinyWebServer")
 
-set(LOG "base/LogStream.h" "base/LogStream.cpp" "base/Logger.h" "base/Logger.cpp" "base/CurrentThread.h" "base/CurrentThread.cpp")
+add_compile_options(-std=c++11)
+
+# TCP的功能模块
 
 set(Address "Address.h" "Address.cpp")
 set(Acceptor "Acceptor.h" "Acceptor.cpp")
 set(Buffer "Buffer.h" "Buffer.cpp")
 set(Channel "Channel.h" "Channel.cpp")
+set(Connection "Connection.h" "Connection.cpp")
 set(EventLoop "EventLoop.h" "EventLoop.cpp")
+set(EventLoopThread "EventLoopThread.h" "EventLoopThread.cpp")
+set(EventLoopThreadPool "EventLoopThreadPool.h" "EventLoopThreadPool.cpp")
 set(Poller "Poller.h" "Poller.cpp")
 set(Socket "Socket.h" "Socket.cpp")
+set(TcpServer "TcpServer.h" "TcpServer.cpp")
 
 
-
+# 底层封装功能模块 
+# feature			-> pthread 
+#					-> logger 
+set(Timestamp "base/Timestamp.h" "base/Timestamp.cpp")
 set(ThreadSynchronization "base/Mutex.h" "base/Mutex.cpp" "base/Condition.h" "base/Condition.cpp" "base/CountDownLatch.h" "base/CountDownLatch.cpp")
 set(Thread "base/CurrentThread.h" "base/CurrentThread.cpp" "base/Thread.h" "base/Thread.cpp")
+
+set(LOG "base/LogStream.h" "base/LogStream.cpp" "base/Logger.h" "base/Logger.cpp" "base/CurrentThread.h" "base/CurrentThread.cpp"  ${Timestamp})
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11  -pthread" )
 
@@ -34,6 +45,20 @@ add_executable(testAcceptor "test/testAcceptor.cpp" ${Socket} ${Address} ${LOG} 
 add_executable(testEventLoop "test/testLoop01.cpp" ${Channel} ${Poller} ${EventLoop} ${Thread} ${ThreadSynchronization} ${LOG})
 add_executable(testEventLoop2 "test/testLoop02.cpp" ${Channel} ${Poller} ${EventLoop} ${Thread} ${ThreadSynchronization} ${LOG})
 add_executable(testEventLoop3 "test/testLoop03.cpp" ${Channel} ${Poller} ${EventLoop} ${Thread} ${ThreadSynchronization} ${LOG})
+add_executable(testTimestamp1 "test/testTimestamp.cpp")
+add_executable(testTimestamp2 "test/testTimestamp2.cpp" ${LOG})
+add_executable(testTcpNet "test/testTcpNet.cpp" ${Channel} ${Poller} ${EventLoop} ${Thread} ${ThreadSynchronization} ${LOG} ${Acceptor} ${Address} ${Socket})
 
-add_executable(main "TestServer.cpp" ${LOG} ${Address} ${Socket} ${Channel} ${Poller} ${EventLoop} ${Buffer} ${Acceptor} ${Thread} ${ThreadSynchronization})
+add_executable(main  
+					${Address} ${Acceptor} ${Buffer} ${Channel} ${Connection} 
+					${EventLoop} ${EventLoopThread} ${EventLoopThreadPool} 
+					${Poller}  ${Socket} ${TcpServer}
+					${LOG} ${Thread} ${ThreadSynchronization} ${Timestamp})
+
+
+add_executable(Echo "test/TestEcho.cpp" 
+					${Address} ${Acceptor} ${Buffer} ${Channel} ${Connection} 
+					${EventLoop} ${EventLoopThread} ${EventLoopThreadPool} 
+					${Poller}  ${Socket} ${TcpServer}
+					${LOG} ${Thread} ${ThreadSynchronization} ${Timestamp})
 # TODO: 如有需要，请添加测试并安装目标。

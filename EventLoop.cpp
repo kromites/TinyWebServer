@@ -1,10 +1,12 @@
 #include "EventLoop.h"
 
+#include <memory>
 #include "unistd.h"
 #include <cassert>
 
 #include "./base/CurrentThread.h"
 #include "./base/Logger.h"
+#include "Socket.h"
 #include "Channel.h"
 #include "Poller.h"
 
@@ -12,7 +14,15 @@ __thread EventLoop* t_loopInThisThread = 0;
 
 int EventLoop::KEpollTimeMs = -1;
 
-EventLoop::EventLoop() :looping_(false), threadId_(CurrentThread::tid()), poller_(new Poller()) {
+EventLoop::EventLoop() :looping_(false),
+						quit_(false),
+						callingFunctorQueue_(false),
+						threadId_(CurrentThread::tid()),
+						poller_(new Poller()),
+						wakeupFd_(eventFd()),
+						wakeupChannel_(this, wakeupFd_),
+						curActiveChannel_(nullptr)
+{
 	LOG_TRACE << "EventLoop created " << this << " in thread " << threadId_;
 
 	if(t_loopInThisThread) {
@@ -20,11 +30,15 @@ EventLoop::EventLoop() :looping_(false), threadId_(CurrentThread::tid()), poller
 	}else {
 		t_loopInThisThread = this;
 	}
+	wakeupChannel_.setReadCallback([this]() { handleRead(); });
+	wakeupChannel_.enableReading();
 }
 
 EventLoop::~EventLoop() {
 	assert(!looping_);
 	t_loopInThisThread = nullptr;
+	wakeupChannel_.disableReadAndWrite();
+	Close(wakeupFd_);
 }
 
 // core function in EventLoop
@@ -42,6 +56,7 @@ void EventLoop::loop() {
 		for(auto it = activeChannels_.begin(); it != activeChannels_.end(); ++it) {
 			(*it)->handleEvent();
 		}
+		doPendingFunctors();
 	}
 
 	LOG_TRACE << "EventLoop " << this << " stop looping";
@@ -65,7 +80,38 @@ EventLoop* EventLoop::getEventLoopOfCurrentThread() {
 
 void EventLoop::quit() {
 	quit_ = true;
-	// wakeup();
+	if(!isInLoopThread()) {
+		wakeup();
+	}
+}
+
+void EventLoop::wakeup() const {
+	// just write ont byte to wake up this loop
+	uint64_t one = 1;
+	ssize_t n = write(wakeupFd_, &one, sizeof one);
+	if(n != sizeof one) {
+		LOG_ERROR << "EventLoop::wakeup() writes " << n << " bytes instead of 8";
+	}
+}
+
+void EventLoop::handleRead() const {
+	// ET
+	uint64_t val = 1;
+	while (true) {
+		const auto ret = ::read(wakeupFd_, &val, sizeof val);
+		if (ret < 0) {
+			if (errno == EAGAIN)
+				break;
+			else if (errno == EINTR)
+				continue;
+			else {
+				LOG_FATAL << "EventLoop::handleWakeUp() error";
+			}
+		}
+		else if (ret != sizeof val) {
+			LOG_ERROR << "EventLoop::handleWakeUp() reads " << ret << " bytes instead of 8";
+		}
+	}
 }
 
 void EventLoop::insertChannel(Channel& channel) const {
@@ -90,6 +136,39 @@ bool EventLoop::hasChannel(Channel& channel) const {
 	assert(channel.ownerLoop() == this);
 	assertInLoopThread();
 	return poller_->hasChannel(channel);
+}
+
+void EventLoop::runInLoop(const Functor& callback) {
+	if(isInLoopThread()) {
+		callback();
+	}else {
+		queueInLoop(callback);
+	}
+}
+
+void EventLoop::queueInLoop(const Functor& callback) {
+	// need lock
+	{
+		MutexLockGuard guard(mutex_);
+		FunctorQueue_.push_back(callback);
+	}
+	if(!isInLoopThread() || callingFunctorQueue_) {
+		// wake up this event loop
+		wakeup();
+	}
+}
+
+void EventLoop::doPendingFunctors() {
+	std::vector<Functor> functors;
+	callingFunctorQueue_ = true;
+	{
+		MutexLockGuard guard(mutex_);
+		functors.swap(FunctorQueue_);
+	}
+	for(size_t i = 0; i<functors.size(); ++i) {
+		functors[i]();
+	}
+	callingFunctorQueue_ = false;
 }
 
 void EventLoop::abortNotInLoopThread() const {

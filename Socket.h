@@ -11,5 +11,8 @@ void Listen(int , int);
 
 void setNonBlock(int);
 
-std::pair<int, Address> Accept(int);
+int Accept(int sockfd, Address& addr);
 
+int eventFd();
+
+void Close(int sockfd);

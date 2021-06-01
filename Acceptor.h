@@ -31,7 +31,10 @@ private:
 // using vector base on object
 // vector vec(2);
 // vec.push_back(10);
+#pragma once
+
 #include "Socket.h"
+#include "Channel.h"
 #include <functional>
 //
 // class Promise {
@@ -49,16 +52,20 @@ private:
 // };
 
 // feature: get new connection
-// no-feature : add new connection to epoll 
+// no-feature : add new connection to epoll
+class EventLoop;
+class Channel;
+
 class Acceptor {
 public:
-	typedef std::function<void(int)> _func;
+	typedef std::function<void(int)> acceptCallback;
 	// Acceptor: get listenFd
-	Acceptor(int, _func);
+	Acceptor(EventLoop* loop, uint16_t port, const acceptCallback& callback = nullptr);
 
-	// do nothing
 	~Acceptor();
 
+	// call sockets api
+	void listen(int length);
 	// get an integer and an address from sys call `::Accept()`
 	void onAccept();
 
@@ -67,11 +74,22 @@ public:
 	// get listenFd
 	int getListenFd();
 	
-	void setFuncPtr(_func& func);
+	void setFuncPtr(const acceptCallback& func);
+
+	mutable Address peerAddress;
+	Address hostAddress;
 
 private:
 	int listenFd_;
-	_func set_;
-};
+	acceptCallback acceptCallback_;
 
+	// adapt the eventloop and channel
+	EventLoop* loop_;
+	Channel listenChannel_;
+
+	// listenAddress
+	Address address_;
+	
+	mutable bool listenning_;
+};
 

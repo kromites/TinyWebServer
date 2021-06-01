@@ -8,16 +8,26 @@ Buffer::Buffer(): buffer_(InitialSize),readIndex_(0),writeIndex_(0)
 }
 
 void Buffer::reset() {
-	writeIndex_ = 0;
-	readIndex_ = 0;
+	writeIndex_ = readIndex_ = 0;
 }
 
 bool Buffer::empty() {
-	if (readIndex_ == writeIndex_) {
-		reset();
-		return true;
+	return writeIndex_ == readIndex_;
+}
+
+void Buffer::consume(size_t len) {
+	if (ReadableSize() > len) {
+		readSize(len);
 	}
-	return false;
+	else {
+		reset();
+	}
+}
+
+void Buffer::write(const char* str, size_t len) {
+	checkCapacity(len);
+	memmove(writeStart(), str, len);
+	writeSize(len);
 }
 
 void Buffer::writeSize(int len) {
@@ -37,6 +47,15 @@ char* Buffer::readString() {
 	return buffer_.data() + readIndex_;
 }
 
+std::string Buffer::read(size_t len) {
+	auto msg = std::string(readString(), len > ReadableSize() ? ReadableSize() : len);
+	consume(len);
+	return msg;
+}
+
+std::string Buffer::readAll() {
+	return this->read(this->ReadableSize());
+}
 
 size_t Buffer::size() {
 	return buffer_.size();
@@ -50,6 +69,7 @@ size_t Buffer::ReadableSize() {
 size_t Buffer::WritableSize() {
 	return buffer_.size()- writeIndex_;
 }
+
 
 void Buffer::checkCapacity(int len) {
 	if(WritableSize() < len) {

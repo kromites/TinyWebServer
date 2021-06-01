@@ -1,5 +1,7 @@
 #include "Channel.h"
 
+
+#include <cassert>
 #include <sys/epoll.h>
 #include "EventLoop.h"
 #include "Poller.h"
@@ -10,14 +12,19 @@ const int Channel::kNoneEvent = 0;
 const int Channel::kReadEvent = EPOLLIN | EPOLLPRI;
 const int Channel::kWriteEvent = EPOLLOUT;
 
-Channel::Channel(EventLoop* loop, int fd): loop_(loop), fd_(fd), events_(0), revents_(0), index_(-1)
+Channel::Channel(EventLoop* loop, int fd): loop_(loop), fd_(fd), events_(0), revents_(0), index_(-1), eventHandling_(false)
 {
+}
+
+Channel::~Channel() {
+	assert(!eventHandling_);
 }
 
 // channel core code : call by the Eventloop::loop()
 void Channel::handleEvent() {
 	
 	LOG_TRACE << eventToString(fd_, revents_);
+	eventHandling_ = true;
 	
 	if(revents_ & EPOLLHUP && !(revents_ & EPOLLIN)) {
 		if (closeCallback_)
@@ -38,6 +45,8 @@ void Channel::handleEvent() {
 		if (writeCallback_)
 			writeCallback_();
 	}
+
+	eventHandling_ = false;
 }
 
 void Channel::setReadCallback(const EventCallback& cb) {

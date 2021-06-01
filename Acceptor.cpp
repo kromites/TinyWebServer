@@ -1,22 +1,51 @@
 #include "Acceptor.h"
 
 
-Acceptor::Acceptor(int port, _func func) : listenFd_(tcpSocket()), set_(func) {
+Acceptor::Acceptor(EventLoop* loop, uint16_t port, const acceptCallback& callback)
+	:peerAddress("0.0.0.0", 0),
+	hostAddress("127.0.0.1", port),
+	listenFd_(tcpSocket()),
+	acceptCallback_(callback),
+	loop_(loop),
+	listenChannel_(loop, listenFd_),
+	address_(Address::getListenAddress(port)),
+	listenning_(false)
+{
 	LOG_TRACE << "Acceptor created, listenFd = " << listenFd_;
-	Bind(listenFd_, Address::getListenAddress(port));
-	Listen(listenFd_, 10);
+	Bind(listenFd_, address_);
+	
+	// set readable for channel;
+	listenChannel_.enableReading();
+	// bind the callback in read
+	listenChannel_.setReadCallback(std::bind(&Acceptor::onAccept, this));
 }
 
+
 Acceptor::~Acceptor() {
+	// set from readable to disable all for channel
+	listenChannel_.disableReadAndWrite();
+	listenChannel_.remove();
+
+	// close listenfd;
+	Close(listenFd_);
 }
+
+void Acceptor::listen(int length) {
+	if(listenning_) {
+		LOG_FATAL << "sockfd is already in listening";
+	}
+	listenning_ = true;
+	Listen(listenFd_, length);
+}
+
 
 void Acceptor::onAccept() {
 	LOG_TRACE << "add new conn";
 	while (true) {
-		std::pair<int, Address> ret = Accept(listenFd_);
-		int connfd = ret.first;
-		Address peer = ret.second;
-
+		Address peer;
+		
+		int connfd = Accept(listenFd_, peer);
+		
 		// set_(connfd);		/* for test the function */
 		if (connfd > 0) {
 			setNonBlock(connfd);
@@ -24,7 +53,7 @@ void Acceptor::onAccept() {
 		}
 		else {
 			if (errno == EAGAIN || errno == EWOULDBLOCK) {
-				LOG_DEBUG << "accept will be block";
+				LOG_DEBUG << "accept will be blocked";
 				break;
 			}
 			else {
@@ -33,7 +62,7 @@ void Acceptor::onAccept() {
 			}
 		}
 		// run add connfd into poll
-		set_(connfd);
+		acceptCallback_(connfd);
 	}
 }
 
@@ -41,6 +70,7 @@ int Acceptor::getListenFd() {
 	return listenFd_;
 }
 
-void Acceptor::setFuncPtr(_func& func) {
-	set_ = func;
+void Acceptor::setFuncPtr(const acceptCallback& func) {
+	acceptCallback_ = func;
 }
+

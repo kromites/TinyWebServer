@@ -1,6 +1,8 @@
 #include "Socket.h"
 #include <arpa/inet.h>
 #include <fcntl.h>
+#include <unistd.h>
+#include <sys/eventfd.h>
 
 
 int tcpSocket() {
@@ -44,12 +46,33 @@ void setNonBlock(int fd) {
 
 }
 
+int Accept(int sockfd, Address& addr) {
+	socklen_t addrlen = sizeof addr;
+	const int connfd = accept(sockfd, addr.getAddr(), &addrlen);
+	const int curErrno = errno;
+	if (connfd > 0) {
+		setNonBlock(connfd);
+		return connfd;
+	}
+	if (curErrno == EINTR) {
+		return Accept(sockfd, addr);
+	}
+	if ((curErrno == EWOULDBLOCK) || (curErrno == EAGAIN)) {
+		LOG_TRACE << "accept will be blocked";
+		return 0;
+	}
+	LOG_FATAL << "accept fault";
+	return -1;
+}
 
-std::pair<int, Address> Accept(int fd) {
-	Address clientAddr;
-	socklen_t len = sizeof clientAddr;
-	LOG_TRACE << "start accept from " << fd;
-	const auto connfd = accept(fd, clientAddr.getAddr(), &len);
-	
-	return { connfd, clientAddr };
+int eventFd() {
+	int eventfd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+	if (eventfd < 0) {
+		LOG_FATAL << "Failed in generating event fd";
+	}
+	return eventfd;
+}
+
+void Close(int sockfd) {
+	close(sockfd);
 }
