@@ -1,5 +1,7 @@
 #include "CountDownLatch.h"
 
+USE_NAMESPACE
+
 CountDownLacth::CountDownLacth(int count): condition_(mutex_), count_(count) {
 	
 }

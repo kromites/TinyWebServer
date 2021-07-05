@@ -3,6 +3,10 @@
 #include <vector>
 #include <string>
 
+#include "base/Util.h"
+
+START_NAMESPACE
+
 constexpr int InitialSize = 1024;
 
 class Buffer {
@@ -41,3 +45,5 @@ private:
 	size_t readIndex_;
 	size_t writeIndex_;
 };
+
+END_NAMESPACE

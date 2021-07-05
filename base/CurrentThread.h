@@ -7,6 +7,8 @@
 #include <string>
 #include <thread>
 
+START_NAMESPACE
+
 namespace CurrentThread{
 	extern __thread int t_cachedTid;
 	extern __thread char t_tidString[32];
@@ -26,3 +28,4 @@ namespace CurrentThread{
 	
 }
 
+END_NAMESPACE

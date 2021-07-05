@@ -2,7 +2,10 @@
 #include <memory>
 #include <vector>
 
+#include "base/Util.h"
 #include "EventLoopThread.h"
+
+START_NAMESPACE
 
 class EventLoop;
 class EventLoopThread;
@@ -33,3 +36,5 @@ private:
 	std::vector<EventLoop*> loops_;
 	std::vector<std::unique_ptr<EventLoopThread>> threads_;
 };
+
+END_NAMESPACE

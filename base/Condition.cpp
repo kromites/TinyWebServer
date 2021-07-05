@@ -1,5 +1,6 @@
 #include "Condition.h"
 
+USE_NAMESPACE
 
 Condition::Condition(MutexLock& mutex):mutex_(mutex) {
 	pthread_cond_init(&pcond_, nullptr);

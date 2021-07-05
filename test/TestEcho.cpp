@@ -1,4 +1,6 @@
+#include "../base/Util.h"
 #include "../base/Logger.h"
+#include "../base/AsyncLogging.h"
 
 #include "../EventLoop.h"
 #include "../TcpServer.h"
@@ -6,17 +8,32 @@
 
 #include <memory>
 
-// void threadInit(EventLoop* loop) {
-// 	LOG_INFO << "io thread init";
-// 	loop->assertInLoopThread();
-// }
+
+USE_NAMESPACE
+
+AsyncLogging* g_asyncLog = nullptr;
+
+void asyncOutput(const char* msg, size_t len)
+{
+	g_asyncLog->write(msg, len);
+}
 
 int main() {
+
+	std::string basename = "../../../Log/echo1.log";
+	AsyncLogging log(basename);
+	log.start();
+	g_asyncLog = &log;
+
+	// Logger::setLogLevel(Logger::LogLevel::DEBUG);
+	Logger::setOutput(asyncOutput);
+	int cnt = 0;
+	const int kBatch = 100;
+
 	// set log level
-	Logger::setLogLevel(Logger::LogLevel::TRACE);
 
 	EventLoop loop;
-	TcpServer server(&loop, 23457, 1);
+	TcpServer server(&loop, 23456, 1);
 
 	server.setConnectionCallback([](std::shared_ptr<Connection> conn) {
 		if (conn->connected()) {
@@ -28,12 +45,13 @@ int main() {
 
 	server.setMessageCallback([](std::shared_ptr<Connection> conn, Buffer& buf) {
 		std::string msg(buf.readAll());
-		LOG_INFO << conn->name() << " echo " << msg.size() << " bytes, ";
+		LOG_INFO << "channel(fd : " <<conn->fd() << ") echo " << msg.size() << " bytes, ";
 		conn->send(msg);
 		});
 
 	LOG_INFO << "server starts";
 
 	server.start();
-	
+
+	return 0;
 }

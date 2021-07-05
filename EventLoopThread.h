@@ -1,6 +1,9 @@
 #pragma once
 
+#include "./base/Util.h"
 #include "./base/Thread.h"
+
+START_NAMESPACE
 
 class EventLoop;
 
@@ -23,3 +26,5 @@ private:
 	EventLoop* loop_;
 	ThreadInitCallback callback_;
 };
+
+END_NAMESPACE

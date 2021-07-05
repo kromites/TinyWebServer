@@ -1,9 +1,11 @@
 #pragma once
-#include "./base/Logger.h"
+#include "./base/Util.h"
 
 #include <vector>
 #include <sys/epoll.h>
 #include <unordered_map>
+
+START_NAMESPACE
 
 class Channel;
 
@@ -35,6 +37,7 @@ public:
 private:
 	void poll_ctl(epoll_event, int) const;
 	void fillActiveEvents(int, std::vector<epoll_event>&) const;
+	std::string flagToString(int flag) const;
 	// epoll_event createEvent(int fd) const;
 
 	std::unordered_map<int, epoll_event> eventsMap_;
@@ -47,3 +50,5 @@ private:
 	void poll_ctl(Channel&, int) const;
 	void fillActiveChannels(int, std::vector<Channel*>&) const;
 };
+
+END_NAMESPACE

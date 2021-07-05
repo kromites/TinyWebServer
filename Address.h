@@ -1,11 +1,13 @@
 #pragma once
 
 #include "./base/Logger.h"
+#include "./base/Util.h"
 
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <string>
 
+START_NAMESPACE
 
 class Address {
 public:
@@ -42,6 +44,6 @@ private:
 
 
 
-
+END_NAMESPACE
 
 

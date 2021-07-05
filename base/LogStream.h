@@ -1,3 +1,4 @@
+#pragma once
 
 /* class Buffer
  * in this head file, we should build a buffer class which is used in the log.
@@ -9,16 +10,19 @@
  *		-> operator override: =, +=
  *		-> feature function:
 */
+#include "Util.h"
+
 #include <functional>
 #include <iostream>
 #include <stddef.h>
 #include <string>
 #include <cstring>
 
-// #define LOG LogStream() 
+
+START_NAMESPACE
 
 constexpr int smallBufferSize = 4000;
-constexpr int largeBufferSize = 40000;
+constexpr int largeBufferSize = 4000 * 1000;
 
 // we should use Buffer<size> to create a buffer, so we can use template.
 
@@ -31,7 +35,7 @@ public:
 	}
 	
 	LogBuffer& operator=(const LogBuffer& buffer) {
-		if (this->data_ == buffer.data())
+		if (this == buffer)
 			return *this;
 		memcpy(this->data_, buffer.data(), buffer.length());
 		current_ = data_ + buffer.length();
@@ -56,7 +60,7 @@ public:
 	}
 
 	size_t avail() const {
-		return data_ + sizeof data_ - current_;
+		return (data_ + sizeof data_) - current_;
 	}
 	
 	size_t length() const {
@@ -66,6 +70,13 @@ public:
 	void reset() {
 		current_ = data_;
 	}
+
+	void bzero() {
+		memset(data_, 0, sizeof data_);
+	}
+
+	const char* current() { return current_; }
+
 
 private:
 	// define variable.
@@ -83,6 +94,7 @@ class LogStream {
 public:
 	using OutputFunc = std::function<void(std::string&&)>;
 	using reference = LogStream&;
+	using SmallBuffer = LogBuffer<smallBufferSize>;
 public:
 	
 	~LogStream() {
@@ -108,19 +120,22 @@ public:
 	reference operator<<(const char*);
 	reference operator<<(const unsigned char*);
 	reference operator<<(const std::string&);
-	reference operator<<(const LogBuffer<smallBufferSize>&);
+	reference operator<<(const SmallBuffer&);
 
 
 	static void setOutput(const OutputFunc& func) {
 		output_ = func;
 	}
+
+	const SmallBuffer& buffer() const { return buffer_; }
 	
 
 private:
 	static OutputFunc output_;
-	LogBuffer<smallBufferSize> buffer_;
+	SmallBuffer buffer_;
 
 	template<typename T>
 	void formatToString(T);
 };
 
+END_NAMESPACE

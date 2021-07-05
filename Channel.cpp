@@ -1,16 +1,17 @@
 #include "Channel.h"
-
+#include "base/Logger.h"
 
 #include <cassert>
 #include <sys/epoll.h>
 #include "EventLoop.h"
 #include "Poller.h"
 
-
+USE_NAMESPACE
 
 const int Channel::kNoneEvent = 0;
 const int Channel::kReadEvent = EPOLLIN | EPOLLPRI;
 const int Channel::kWriteEvent = EPOLLOUT;
+
 
 Channel::Channel(EventLoop* loop, int fd): loop_(loop), fd_(fd), events_(0), revents_(0), index_(-1), eventHandling_(false)
 {
@@ -26,7 +27,7 @@ void Channel::handleEvent() {
 	LOG_TRACE << eventToString(fd_, revents_);
 	eventHandling_ = true;
 	
-	if(revents_ & EPOLLHUP && !(revents_ & EPOLLIN)) {
+	if((revents_ & EPOLLHUP) && !(revents_ & EPOLLIN)) {
 		if (closeCallback_)
 			closeCallback_();
 	}
@@ -168,9 +169,7 @@ std::string Channel::toString() {
 
 
 std::string Channel::eventToString(int fd, int event) {
-	std::string str = "fd = ";
-	str += std::to_string(fd);
-	str += ", event = ";
+	std::string str = "fd = " + std::to_string(fd) + ", event = ";
 	if (event & EPOLLIN)
 		str += "EPOLLIN ";
 	if (event & EPOLLOUT)

@@ -1,5 +1,7 @@
 #include "LogStream.h"
 
+USE_NAMESPACE
+
 LogStream::OutputFunc LogStream::output_ = [](std::string&& val) { std::cout << val << std::endl;  };
 
 

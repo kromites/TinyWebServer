@@ -1,7 +1,12 @@
 #pragma once
+#include "Util.h"
 
 #include <cstdint>
 #include <string>
+
+START_NAMESPACE
+
+constexpr int kMicroSecondsPerSecond = 1000 * 1000;
 
 class Timestamp {
 public:
@@ -27,7 +32,7 @@ public:
 
 	static Timestamp fromUnixTime(time_t t);
 	static Timestamp fromUnixTime(time_t t, int microseconds);
-	static const int kMicroSecondsPerSecond = 1000 * 1000;
+
 private:
 	int64_t microSecondsSinceEpoch_;
 };
@@ -49,10 +54,12 @@ inline bool operator>(Timestamp& lhs, Timestamp& rhs) {
 
 inline double timeDifference(Timestamp& high, Timestamp& low) {
 	auto diff = high.microSecondsSinceEpoch() - low.microSecondsSinceEpoch();
-	return static_cast<double>(diff) / Timestamp::kMicroSecondsPerSecond;
+	return static_cast<double>(diff) / kMicroSecondsPerSecond;
 }
 
 inline Timestamp addTime(Timestamp& timestamp, double seconds) {
-	auto currentMicroseconds = static_cast<int64_t>(seconds * Timestamp::kMicroSecondsPerSecond);
+	auto currentMicroseconds = static_cast<int64_t>(seconds * kMicroSecondsPerSecond);
 	return Timestamp(timestamp.secondsSinceEpoch()+currentMicroseconds);
 }
+
+END_NAMESPACE

@@ -1,8 +1,13 @@
+#pragma once
+
+#include "Util.h"
+
 #include <pthread.h>
 #include <functional>
 #include <atomic>
 
 #include "CountDownLatch.h"
+START_NAMESPACE
 
 class Thread {
 public:
@@ -33,3 +38,5 @@ private:
 
 	static std::atomic_int32_t numCreated_;
 };
+
+END_NAMESPACE

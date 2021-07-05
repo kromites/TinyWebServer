@@ -1,5 +1,6 @@
 #include "Acceptor.h"
 
+USE_NAMESPACE
 
 Acceptor::Acceptor(EventLoop* loop, uint16_t port, const acceptCallback& callback)
 	:peerAddress("0.0.0.0", 0),

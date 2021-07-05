@@ -3,6 +3,8 @@
 
 #include <cassert>
 
+USE_NAMESPACE
+
 EventLoopThread::EventLoopThread( const std::string& name, const ThreadInitCallback& cb) :
 	thread_([this]() {this->threadFunc(); }, name),
 	mutex_(),

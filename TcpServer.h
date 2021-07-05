@@ -1,6 +1,8 @@
 #pragma once
 #include <map>
 
+#include "./base/Util.h"
+
 #include "EventLoopThreadPool.h"
 #include "EventLoop.h"
 #include "Address.h"
@@ -12,6 +14,8 @@
  *			-> feature : the Lifetime is controlled by user.
  *			-> usage : user only sets the callback function, and invoke TcpServer::start()
  */
+
+START_NAMESPACE
 
 class Connection;
 
@@ -42,7 +46,7 @@ public:
 	void setConnectionCallback(const ConnectionCallback& cb) { connectioncallback_ = cb; }
 	void setMessageCallback(const MessageCallback& cb) { messagecallback_ = cb; }
 
-	
+	const std::string name() const { return name_; }
 
 private:
 	// Not thread safe, but in loop
@@ -67,3 +71,5 @@ private:
 	ConnectionMap connections_;
 	
 };
+
+END_NAMESPACE

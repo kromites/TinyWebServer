@@ -3,6 +3,7 @@
 #include "EventLoop.h"
 #include "EventLoopThread.h"
 
+USE_NAMESPACE
 
 EventLoopThreadPool::EventLoopThreadPool(const ThreadInitCallback& func, size_t size, const std::string& name ):
 	started_(false), loopSize_(size), name_(name)

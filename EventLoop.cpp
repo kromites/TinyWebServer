@@ -10,13 +10,15 @@
 #include "Channel.h"
 #include "Poller.h"
 
-__thread EventLoop* t_loopInThisThread = 0;
+USE_NAMESPACE
+
 
 int EventLoop::KEpollTimeMs = -1;
 
 EventLoop::EventLoop() :looping_(false),
 						quit_(false),
 						callingFunctorQueue_(false),
+						handleEvent_(false),
 						threadId_(CurrentThread::tid()),
 						poller_(new Poller()),
 						wakeupFd_(eventFd()),
@@ -25,18 +27,11 @@ EventLoop::EventLoop() :looping_(false),
 {
 	LOG_TRACE << "EventLoop created " << this << " in thread " << threadId_;
 
-	if(t_loopInThisThread) {
-		LOG_FATAL << "Another EventLoop " << t_loopInThisThread << " exits in this thread " << threadId_;
-	}else {
-		t_loopInThisThread = this;
-	}
 	wakeupChannel_.setReadCallback([this]() { handleRead(); });
 	wakeupChannel_.enableReading();
 }
 
 EventLoop::~EventLoop() {
-	assert(!looping_);
-	t_loopInThisThread = nullptr;
 	wakeupChannel_.disableReadAndWrite();
 	Close(wakeupFd_);
 }
@@ -53,12 +48,15 @@ void EventLoop::loop() {
 	while(!quit_) {
 		activeChannels_.clear();
 		poller_->poll(activeChannels_, KEpollTimeMs);
+		handleEvent_ = true;
 		for(auto it = activeChannels_.begin(); it != activeChannels_.end(); ++it) {
 			(*it)->handleEvent();
 		}
+
+		handleEvent_ = false;
+		
 		doPendingFunctors();
 	}
-
 	LOG_TRACE << "EventLoop " << this << " stop looping";
 	looping_ = false;
 }
@@ -74,10 +72,6 @@ bool EventLoop::isInLoopThread() const {
 }
 
 
-EventLoop* EventLoop::getEventLoopOfCurrentThread() {
-	return t_loopInThisThread;
-}
-
 void EventLoop::quit() {
 	quit_ = true;
 	if(!isInLoopThread()) {
@@ -88,7 +82,7 @@ void EventLoop::quit() {
 void EventLoop::wakeup() const {
 	// just write ont byte to wake up this loop
 	uint64_t one = 1;
-	ssize_t n = write(wakeupFd_, &one, sizeof one);
+	ssize_t n = ::write(wakeupFd_, &one, sizeof one);
 	if(n != sizeof one) {
 		LOG_ERROR << "EventLoop::wakeup() writes " << n << " bytes instead of 8";
 	}
@@ -152,7 +146,7 @@ void EventLoop::queueInLoop(const Functor& callback) {
 		MutexLockGuard guard(mutex_);
 		FunctorQueue_.push_back(callback);
 	}
-	if(!isInLoopThread() || callingFunctorQueue_) {
+	if(!isInLoopThread() || handleEvent_) {
 		// wake up this event loop
 		wakeup();
 	}
@@ -172,7 +166,7 @@ void EventLoop::doPendingFunctors() {
 }
 
 void EventLoop::abortNotInLoopThread() const {
-	LOG_FATAL << "This EventLoop shoule be in thread " << threadId_ << " but current in thread " << CurrentThread::tid();
+	LOG_FATAL << "This EventLoop should be in thread " << threadId_ << " but current in thread " << CurrentThread::tid();
 }
 
 

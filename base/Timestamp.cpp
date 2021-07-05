@@ -4,6 +4,8 @@
 #include <cinttypes>
 #include <sys/time.h>
 
+USE_NAMESPACE
+
 Timestamp::Timestamp():microSecondsSinceEpoch_(0) {
 	
 }

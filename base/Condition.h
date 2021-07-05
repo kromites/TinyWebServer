@@ -1,4 +1,10 @@
+#pragma once
+
 #include "Mutex.h"
+
+#include "Util.h"
+
+START_NAMESPACE
 
 class Condition {
 public:
@@ -16,7 +22,10 @@ public:
 
 	void notifyAll();
 
+
 private:
 	MutexLock& mutex_;
 	pthread_cond_t pcond_;
 };
+
+END_NAMESPACE

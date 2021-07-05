@@ -3,6 +3,9 @@
 #include "Thread.h"
 #include "Logger.h"
 #include "CurrentThread.h"
+
+USE_NAMESPACE
+
 class MainThreadInitializer {
 public:
 	MainThreadInitializer() {
@@ -11,7 +14,7 @@ public:
 	}
 };
 
-MainThreadInitializer init;
+MainThreadInitializer init{};
 
 
 struct ThreadData {
@@ -33,6 +36,7 @@ struct ThreadData {
 			CurrentThread::t_threadName = "crashed";
 			fprintf(stderr, "exception caught in Thread %s\n", name_.c_str());
 			fprintf(stderr, "exception: %s\n", e.what());
+
 			abort();
 		}
 		catch (...) {
@@ -74,16 +78,15 @@ Thread::~Thread() {
 void Thread::start() {
 	started_ = true;
 	auto* args = new ThreadData(func_, &latch_, name_, &tid_);
-	if (pthread_create(&pthreadId_, nullptr, runThread, static_cast<void*>(args)) == -1) {
+	if (pthread_create(&pthreadId_, nullptr, runThread, static_cast<void*>(args))) {
 		delete args;
 		started_ = false;
 		LOG_ERROR << "Failed in pthread_create";
-	}else {
+	}
+	else {
 		latch_.wait();
 		assert(tid_ > 0);
 	}
-	
-	
 }
 
 int Thread::join() {

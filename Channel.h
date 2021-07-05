@@ -1,6 +1,9 @@
 #pragma once
 
+#include "base/Util.h"
 #include <functional>
+
+START_NAMESPACE
 
 class EventLoop;
 
@@ -78,3 +81,5 @@ private:
 	EventCallback errorCallback_;
 	EventCallback closeCallback_;
 };
+
+END_NAMESPACE

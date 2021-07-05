@@ -2,6 +2,8 @@
 #include <cassert>
 #include <cstring>
 
+USE_NAMESPACE
+
 Buffer::Buffer(): buffer_(InitialSize),readIndex_(0),writeIndex_(0)
 {
 	

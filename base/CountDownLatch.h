@@ -3,6 +3,10 @@
 #include "Mutex.h"
 #include "Condition.h"
 
+#include "Util.h"
+
+START_NAMESPACE
+
 class CountDownLacth {
 public:
 	explicit CountDownLacth(int count);
@@ -17,3 +21,5 @@ private:
 	Condition condition_;
 	int count_;
 };
+
+END_NAMESPACE

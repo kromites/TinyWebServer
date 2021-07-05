@@ -3,6 +3,8 @@
 #include <cassert>
 #include <unistd.h>
 
+USE_NAMESPACE
+
 Connection::Connection(EventLoop& loop, int fd, const Address& hostAddr, Address& peerAddr):
 	loop_(&loop), hostAddr_(hostAddr), peerAddr_(peerAddr), channel_(loop_, fd)
 {
@@ -15,13 +17,11 @@ Connection::~Connection() {
 	
 }
 
-// todo make it to be ET
 void Connection::handleRead() {
 	LOG_TRACE << "start handle read";
 	char buf[65536];
 	
 	while (true) {
-		
 		const auto readLen = ::read(channel_.fd(), buf, sizeof buf);
 		// FIXME: close connection if n == 0;
 		if (readLen > 0) {
@@ -31,7 +31,7 @@ void Connection::handleRead() {
 			messagecallback_(shared_from_this(), inputBuffer_);
 		}
 		else if (readLen == 0) {
-			handleClose();
+			close();
 			break;
 		}
 		else {
@@ -92,22 +92,21 @@ void Connection::handleWrite() {
 
 
 // main feature : call the closeCallback_
-void Connection::handleClose() {
-	loop_->assertInLoopThread();
-	LOG_TRACE << "TcpConnection::handleClose state = " << state_;
-	assert(state_ == kConnected || kDisconnecting );
-	state_ = kDisconnected; 
-	// we don't close fd, leave it to dctor, so we can find leaks easily.
-	channel_.disableReadAndWrite();
-	channel_.remove();
-	::shutdown(channel_.fd(), SHUT_RDWR);
-	// must be the last line
-	closecallback_(shared_from_this());
-}
+// void Connection::handleClose() {
+// 	loop_->assertInLoopThread();
+// 	LOG_TRACE << "TcpConnection::handleClose state = " << state_;
+// 	assert(state_ == kConnected || kDisconnecting );
+// 	state_ = kDisconnected; 
+// 	// we don't close fd, leave it to dctor, so we can find leaks easily.
+// 	channel_.disableReadAndWrite();
+// 	channel_.remove();
+// 	::shutdown(channel_.fd(), SHUT_RDWR);
+// 	// must be the last line
+// 	closecallback_(shared_from_this());
+// }
 
 
 void Connection::handleError() {
-	// todo just log_error
 	close();
 }
 
@@ -138,6 +137,7 @@ void Connection::close() {
 	channel_.remove();
 	::shutdown(channel_.fd(), SHUT_RDWR);
 	state_ = kDisconnected;
+	LOG_DEBUG << "test close : state_ = " << state_;
 	loop_->queueInLoop([this]() {
 		closecallback_(shared_from_this());
 		});

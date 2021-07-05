@@ -2,6 +2,10 @@
 
 #include <pthread.h>
 
+#include "Util.h"
+
+START_NAMESPACE
+
 class MutexLock {
 public:
 	MutexLock();
@@ -37,3 +41,5 @@ public:
 private:
 	MutexLock& mutex_;
 };
+
+END_NAMESPACE

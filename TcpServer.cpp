@@ -1,6 +1,8 @@
 #include "TcpServer.h"
 #include "Connection.h"
 
+USE_NAMESPACE
+
 TcpServer::TcpServer(EventLoop* loop, int port, int workthread) :
 	mainLoop_(loop),
 	acceptor_(mainLoop_, port, [this](int connfd) { this->newConnection(connfd); }),
@@ -56,7 +58,6 @@ void TcpServer::newConnection(int sockfd) {
 
 // remove conn from ConnectionMap
 void TcpServer::removeConnection(const TcpConnectionPtr& conn) {
-	mainLoop_->assertInLoopThread();
 	LOG_INFO << "TcpServer::removeConnection [" << name_ << "]- connection " << conn->name();
 	mainLoop_->queueInLoop([this] {
 		this->connections_.erase(name_);

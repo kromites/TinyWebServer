@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include <sys/syscall.h>
 
+USE_NAMESPACE
+
 __thread int CurrentThread::t_cachedTid = 0;
 __thread char CurrentThread::t_tidString[32];
 __thread size_t CurrentThread::t_tidStringLength;

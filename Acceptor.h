@@ -33,6 +33,8 @@ private:
 // vec.push_back(10);
 #pragma once
 
+#include "base/Util.h"
+
 #include "Socket.h"
 #include "Channel.h"
 #include <functional>
@@ -53,6 +55,8 @@ private:
 
 // feature: get new connection
 // no-feature : add new connection to epoll
+START_NAMESPACE
+
 class EventLoop;
 class Channel;
 
@@ -93,3 +97,4 @@ private:
 	mutable bool listenning_;
 };
 
+END_NAMESPACE

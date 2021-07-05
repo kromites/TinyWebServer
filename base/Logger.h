@@ -1,18 +1,14 @@
 #pragma once
+
+#include "Util.h"
 #include "LogStream.h"
 #include "Timestamp.h"
 
 #include <cstring>
 
+START_NAMESPACE
 
-
-//todo complete ctr and log_level.
-//todo implement class timestamp.
-//todo handle the error and fatal, we can print the reason.
-//todo implement the class MyLogger.
-
-
-
+class AsyncLogging;
 
 class Logger {
 public:
@@ -66,6 +62,13 @@ public:
 	static LogLevel logLevel();
 	static void setLogLevel(LogLevel level);
 
+	using OutputFunc = void(*)(const char*, size_t);
+	using FlushFunc = void(*)();
+
+	static void setOutput(OutputFunc);
+	static void setFlush(FlushFunc);
+
+
 	// using OutputFunc = void(*)(const char*, size_t);
 	// using FlushFunc = void(*)();
 	//
@@ -82,7 +85,8 @@ private:
 	class MyLogger {
 	public:
 		MyLogger(LogLevel level, int savedErrno, SourceFile& file, int line);
-	
+
+		void formateTime();
 		void finish();
 
 		Timestamp time_;
@@ -130,9 +134,9 @@ static Logger::LogLevel defaultLogLevel = Logger::LogLevel::INFO;
 #define LOG_TRACE if(Logger::logLevel() <= Logger::LogLevel::TRACE) Logger(Logger::LogLevel::TRACE, __FILE__, __LINE__).stream()  // NOLINT(cppcoreguidelines-macro-usage)
 #define LOG_DEBUG if(Logger::logLevel() <= Logger::LogLevel::DEBUG) Logger(Logger::LogLevel::DEBUG, __FILE__, __LINE__).stream()  // NOLINT(cppcoreguidelines-macro-usage)
 #define LOG_INFO if(Logger::logLevel()<= Logger::LogLevel::INFO) Logger(Logger::LogLevel::INFO, __FILE__, __LINE__).stream()  // NOLINT(cppcoreguidelines-macro-usage)
-
-
 #define LOG_WARN  Logger(Logger::LogLevel::WARN, __FILE__, __LINE__).stream()
 #define LOG_ERROR  Logger(Logger::LogLevel::ERROR, __FILE__, __LINE__).stream()
 #define LOG_FATAL  Logger(Logger::LogLevel::FATAL, __FILE__, __LINE__).stream()
-// TODO handle with error and fatal
+
+
+END_NAMESPACE

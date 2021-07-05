@@ -2,6 +2,7 @@
 #include "CurrentThread.h"
 #include <cassert>
 
+USE_NAMESPACE
 MutexLock::MutexLock(): holder_(0) {
 	pthread_mutex_init(&mutex_, nullptr);
 }
@@ -12,7 +13,7 @@ MutexLock::~MutexLock() {
 }
 
 bool MutexLock::isLockedByThisThread() {
-	return holder_ == CurrentThread::tid();      // todo make CurrentThread .{cpp,h}
+	return holder_ == CurrentThread::tid();      
 }
 
 void MutexLock::assertLocked() {

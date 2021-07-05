@@ -1,11 +1,15 @@
 #pragma once
 
+#include <any>
 #include <vector>
 #include <memory>
 
+#include "./base/Util.h"
 #include "./base/Timestamp.h"
 #include "Channel.h"
 #include "./base/Mutex.h"
+
+START_NAMESPACE
 
 class Poller;
 class Channel;
@@ -13,6 +17,7 @@ class Channel;
 class EventLoop {
 public:
 	using Functor = std::function<void()>;
+	using TimeCallback = std::function<void()>;
 	
 	EventLoop();
 	~EventLoop();
@@ -22,8 +27,6 @@ public:
 	void assertInLoopThread() const;
 
 	bool isInLoopThread() const;
-
-	EventLoop* getEventLoopOfCurrentThread();
 
 	void quit();
 
@@ -37,7 +40,31 @@ public:
 	bool hasChannel(Channel& channel) const;
 
 	// for TimeQueue
+	Timestamp runAt(const Timestamp& time, const TimeCallback& cb);
 
+	Timestamp runAfter(double delay, const TimeCallback& cb);
+
+	Timestamp runEvery(double interval, const TimeCallback& cb);
+
+	// context
+
+	void setContext(const std::any& context)
+	{
+		context_ = context;
+	}
+
+	const std::any& getContext() const
+	{
+		return context_;
+	}
+
+	std::any* getMutableContext()
+	{
+		return &context_;
+	}
+
+	// cancels the timer
+	void cancel(Timestamp timerId);
 
 	//
 	void runInLoop(const Functor& callback);
@@ -54,6 +81,7 @@ private:
 	bool looping_;  /* atomic */
 	bool quit_;  /* atomic */
 	bool callingFunctorQueue_;
+	bool handleEvent_;
 	const pid_t threadId_;
 	Timestamp pollReturnTime_;
 	std::unique_ptr<Poller> poller_;
@@ -71,4 +99,8 @@ private:
 	
 	// exposed to other threads
 	std::vector<Functor> FunctorQueue_;
+	std::any context_;
 };
+
+
+END_NAMESPACE

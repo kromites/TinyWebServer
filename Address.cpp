@@ -1,6 +1,8 @@
 #include "Address.h"
 #include <arpa/inet.h>
 
+USE_NAMESPACE
+
 Address::Address(const std::string& ip, uint16_t port) : Address(inet_addr(ip.c_str()), port) {
 
 }

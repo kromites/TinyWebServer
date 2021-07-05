@@ -4,22 +4,23 @@
 #include <unistd.h>
 #include <sys/eventfd.h>
 
+USE_NAMESPACE
 
-int tcpSocket() {
-	const auto res = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+int tinyWebSever::tcpSocket() {
+	const auto res = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
 	if (res < 0)
 		LOG_ERROR << "socket error, can't generate listenfd";
 	return res;
 }
 
-void Bind(int listenfd, Address addr) {
+void tinyWebSever::Bind(int listenfd, Address addr) {
 	LOG_TRACE << "start bind with " << listenfd;
 	auto ret = bind(listenfd, addr.getAddr(), addr.size());
 	if (ret < 0)
 		LOG_ERROR << "bind error";
 }
 
-void Listen(int listenfd, int maxLength) {
+void tinyWebSever::Listen(int listenfd, int maxLength) {
 	LOG_TRACE << "start listen from " << listenfd;
 	auto ret = listen(listenfd, maxLength);
 	if (ret < 0)
@@ -27,13 +28,13 @@ void Listen(int listenfd, int maxLength) {
 }
 
 
-void setNonBlock(int fd) {
+void tinyWebSever::setNonBlock(int fd) {
 	auto flag = fcntl(fd, F_GETFL, 0);
 	if (flag < 0)
 		LOG_ERROR << "fcntl F_GETFL errors";
 
 	flag |= O_NONBLOCK;
-	// close fd when exec() called
+
 	if(fcntl(fd, F_SETFL, flag) < 0)
 		LOG_ERROR << "fcntl F_SETFL O_NONBLOCK errors";
 
@@ -46,7 +47,7 @@ void setNonBlock(int fd) {
 
 }
 
-int Accept(int sockfd, Address& addr) {
+int tinyWebSever::Accept(int sockfd, Address& addr) {
 	socklen_t addrlen = sizeof addr;
 	const int connfd = accept(sockfd, addr.getAddr(), &addrlen);
 	const int curErrno = errno;
@@ -65,7 +66,7 @@ int Accept(int sockfd, Address& addr) {
 	return -1;
 }
 
-int eventFd() {
+int tinyWebSever::eventFd() {
 	int eventfd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
 	if (eventfd < 0) {
 		LOG_FATAL << "Failed in generating event fd";
@@ -73,6 +74,6 @@ int eventFd() {
 	return eventfd;
 }
 
-void Close(int sockfd) {
+void tinyWebSever::Close(int sockfd) {
 	close(sockfd);
 }
