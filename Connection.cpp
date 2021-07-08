@@ -117,6 +117,7 @@ void Connection::connectEstablished() {
 
 	// set fd;
 	channel_.enableReading();
+	connectioncallback_(shared_from_this());
 }
 
 void Connection::connectDestroyed() {

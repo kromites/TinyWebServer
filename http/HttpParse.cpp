@@ -1,5 +1,7 @@
 #include "HttpParse.h"
 #include "../Buffer.h"
+#include "../base/Logger.h"
+
 
 #include <algorithm>
 USE_NAMESPACE
@@ -15,8 +17,10 @@ static const char* findCRLF(const char* begin, const char* end) {
 }
 
 bool HttpParse::parseRequest(Buffer& buffer) {
+	LOG_TRACE << "start parse request";
 	auto ret = parse(buffer.readString(), buffer.readString() + buffer.ReadableSize());
 	// handle the ret
+	LOG_TRACE << "This parse consume " << (ret > 0 ? ret : -1) << " bytes";
 	if (ret < 0) {
 		return false;
 	}
@@ -25,6 +29,7 @@ bool HttpParse::parseRequest(Buffer& buffer) {
 }
 
 int HttpParse::parse(const char* begin, const char* end) {
+	LOG_TRACE << "This is parse circle function ";
 	bool hasMore = true;
 	bool ok = true;
 	const char* start = begin;
@@ -99,34 +104,40 @@ int HttpParse::parse(const char* begin, const char* end) {
 
 
 bool HttpParse::parseRequestLine(const char* begin, const char* end) {
+	LOG_TRACE << "start parse request line";
 	bool succeed = false;
 	const char* start = begin;
 	const char* space = std::find(start, end, ' ');
 	if (space != end && request_.setMethod(start, space)) {
+		LOG_TRACE << request_.toString(request_.method());
+		
 		start = space + 1;
 		space = std::find(start, end, ' ');
 		// find the path
 		if (space != end) {
 			request_.setUrl(start, space);
+			LOG_TRACE << request_.URL();
 			start = space + 1;
 			succeed = (end - start == 8) && std::equal(start, end - 1, "HTTP/1.");
 			if (succeed) {
 				if (*(end - 1) == '0') {
 					request_.setVersion(HttpRequest::kHttp10);
 				}
-				else if (*(end - 1) == '0') {
+				else if (*(end - 1) == '1') {
 					request_.setVersion(HttpRequest::kHttp11);
 				}
 				else {
 					succeed = false;
 				}
 			}
+			LOG_TRACE << request_.toString(request_.version());
 		}
 	}
 	return succeed;
 }
 
 int HttpParse::parseHeader(const char* begin, const char* end) {
+	LOG_TRACE << "start parse header";
 	const char* crlf = findCRLF(begin, end);
 	if (crlf == nullptr) {
 		// crlf can't find.

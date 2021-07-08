@@ -21,13 +21,7 @@ void HttpServer::start() {
 void HttpServer::onConnection(const ConnectionPtr conn) {
 	if(conn->connected()) {
 		LOG_DEBUG << "HTTP OnConnection ";
-		
 		conn->setContext(HttpParse());
-		if (conn->context_.type() == typeid(HttpParse)) {
-			LOG_DEBUG << "context's type is HttpParse ";
-		}else {
-			LOG_DEBUG << "context's type is not HttpParse";
-		}
 	}
 }
 
@@ -45,16 +39,21 @@ void HttpServer::onRequest(const ConnectionPtr& conn, HttpRequest& request, cons
 }
 
 void HttpServer::onMessage(const ConnectionPtr conn, Buffer& buf, const std::string& message) {
-	
-	HttpParse* parser = std::any_cast<HttpParse>(conn->getMutableContext());
-	parser->initState();
+	LOG_TRACE << "start On Message";
+	auto parser = std::any_cast<HttpParse>(conn->getMutableContext());
 	// LOG_DEBUG << "parse init state" << parser->state();
-	if(!parser->parseRequest(buf)) {
+	auto ret = parser->parseRequest(buf);
+	LOG_TRACE << "parseRequest " << ( ret ? "success" : "fail");
+	if(!ret) {
+		LOG_TRACE << "parse fail, return 400 code status";
 		conn->send("HTTP/1.1 400 Bad Request\r\n\r\n");
 		conn->shutdown();
 	}
 
+	LOG_TRACE << "state : " << parser->state();
+	
 	if(parser->getAll()) {
+		LOG_TRACE << " parse completed ";
 		auto& req = parser->request();
 		onRequest(conn, req, message);
 		parser->reset();

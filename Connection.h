@@ -85,7 +85,7 @@ public:
 	const Address hostAddr() const;
 	const Address peerAddr() const;
 
-	std::any context_;
+	
 private:
 	enum StateE { kConnecting, kConnected, kDisconnecting, kDisconnected };
 	void setState(StateE s) { state_ = s; }
@@ -116,8 +116,8 @@ private:
 
 	Buffer inputBuffer_;       // handleRead
 	Buffer outputBuffer_;      // handleWrite
-
 	
+	std::any context_;
 };
 
 END_NAMESPACE

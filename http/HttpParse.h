@@ -56,15 +56,10 @@ public:
 		return ret;
 	}
 
-	void initState() {
-		state_ = kREQUESTLINE;
-	}
-
 private:
 	int parse(const char* begin, const char* end);
 	bool parseRequestLine(const char* begin, const char* end);
 	int parseHeader(const char* begin, const char* end);
-
 	ParseState state_;
 	HttpRequest request_;
 	// int remainLength_ = -1;
