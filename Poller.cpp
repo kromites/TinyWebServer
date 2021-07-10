@@ -66,9 +66,8 @@ void Poller::insert(Channel& channel) {
 
 void Poller::remove(Channel& channel) {
 	LOG_TRACE << "remove channel: " << channel.toString();
-	const int fd = channel.fd();
 	poll_ctl(channel, EPOLL_CTL_DEL);
-	channelMap_.erase(fd);
+	channelMap_.erase(channel.fd());
 }
 
 void Poller::update(Channel& channel) {

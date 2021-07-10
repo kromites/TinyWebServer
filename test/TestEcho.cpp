@@ -38,8 +38,7 @@ int main() {
 	server.setConnectionCallback([](std::shared_ptr<Connection> conn) {
 		if (conn->connected()) {
 			LOG_INFO << "EchoServer - " << conn->peerAddr().toString() << " -> "
-				<< conn->hostAddr().toString() << " is "
-				<< (conn->connected() ? "UP" : "DOWN");
+				<< conn->hostAddr().toString() << " is connected";
 		}
 		});
 

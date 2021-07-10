@@ -18,7 +18,7 @@ Acceptor::Acceptor(EventLoop* loop, uint16_t port, const acceptCallback& callbac
 	// set readable for channel;
 	listenChannel_.enableReading();
 	// bind the callback in read
-	listenChannel_.setReadCallback(std::bind(&Acceptor::onAccept, this));
+	listenChannel_.setReadCallback([this]() { this->onAccept(); });
 }
 
 
@@ -43,14 +43,14 @@ void Acceptor::listen(int length) {
 void Acceptor::onAccept() {
 	LOG_TRACE << "add new conn";
 	while (true) {
-		Address peer;
 		
-		int connfd = Accept(listenFd_, peer);
+		int connfd = Accept(listenFd_, peerAddress);
 		
 		// set_(connfd);		/* for test the function */
 		if (connfd > 0) {
 			setNonBlock(connfd);
-			LOG_INFO << "new connection from " << peer.toString();
+			LOG_INFO << "new connection from " << peerAddress.toString();
+			acceptCallback_(connfd);
 		}
 		else {
 			if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -61,9 +61,7 @@ void Acceptor::onAccept() {
 				LOG_ERROR << "accept returns error from connection fd : " << connfd;
 				break;
 			}
-		}
-		// run add connfd into poll
-		acceptCallback_(connfd);
+		}		
 	}
 }
 

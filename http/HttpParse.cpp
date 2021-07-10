@@ -110,7 +110,6 @@ bool HttpParse::parseRequestLine(const char* begin, const char* end) {
 	const char* space = std::find(start, end, ' ');
 	if (space != end && request_.setMethod(start, space)) {
 		LOG_TRACE << request_.toString(request_.method());
-		
 		start = space + 1;
 		space = std::find(start, end, ' ');
 		// find the path

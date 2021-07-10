@@ -1,95 +1,71 @@
-﻿// TinyWebServer.cpp: 定义应用程序的入口点。
-//
+﻿#include <csignal>
 
-#include "TinyWebServer.h"
-#include "Poller.h"
+#include "http/HttpServer.h"
 
-#include <strings.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <poll.h>
-#include <sys/epoll.h>
-// what a f*ck world
+#include "base/Util.h"
+#include "base/Logger.h"
 
-using namespace std;
+#include "EventLoop.h"
+#include "Connection.h"
 
-const std::string html = "<html>\n<head>\n <title>hello zw</title></head><body><p>hello world</p><p>this is a test </p></body></html>";
+#include <memory>
+#include <string>
 
-std::string httpResponse = "200 HTTP/1.1 OK\n\n";
+#include "http/HttpParse.h"
+#include "http/HttpRequest.h"
+#include "http/HttpResponse.h"
+#include "base/AsyncLogging.h"
 
-const int Maxsize = 4096;
-char buffer[Maxsize];
+USE_NAMESPACE
 
-int main()
-{
-	httpResponse += html;
-	sockaddr_in serveraddr;
-	
-	
-	auto listenfd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
-	bzero(&serveraddr, sizeof serveraddr);
-	serveraddr.sin_port = htons(10087);
-	serveraddr.sin_family = AF_INET;
-	serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	auto ret = bind(listenfd, reinterpret_cast<sockaddr*> (&serveraddr), sizeof serveraddr);
-	if(ret == -1) {
-		perror("error_bind");
-		exit(-1);
-	}
-	
-	auto lis = listen(listenfd, 10); //10: max queue nums
-	std::cout << lis << std::endl;
+static std::string mainPage;
+AsyncLogging* g_asyncLog = nullptr;
+
+void asyncOutput(const char* msg, size_t len) {
+	g_asyncLog->write(msg, len);
+}
+
+int main() {
+
+	// fixed : in order to prevent SIGPIPE in write, just ignore SIGPIPE
+	::signal(SIGPIPE, SIG_IGN);
+
+	// set log 
+	std::string basename = "../../../Log/echo1.log";
+	AsyncLogging log(basename);
+	log.start();
+	g_asyncLog = &log;
+	Logger::setLogLevel(Logger::LogLevel::TRACE);
+	Logger::setOutput(asyncOutput);
 
 
-	Poller poller;
-	auto epollfd = poller.get_epollfd();
-	
-	// auto epollfd = epoll_create1(0);
-	//
-	// todo need to check epollfd.
-	// if(epollfd == -1) {
-	// 	perror("error_create1");
-	// 	exit(-1);
-	// }
-	
-	epoll_event ev, events[10];
-	ev.events = EPOLLIN;
-	ev.data.fd = listenfd;
+	// set http server
+	EventLoop loop;
+	HttpServer server(&loop, 23456, 1);
 
-	poller.add_fd(ev);
+	server.setConnectionCallback([&server](std::shared_ptr<Connection> conn) {
+		LOG_DEBUG << "set connection callback";
+		server.onConnection(conn);
+	});
 
-	
-	// if(epoll_ctl(epollfd, EPOLL_CTL_ADD, listenfd, &ev) == -1) {
-	// 	perror("error_ctl");
-	// 	exit(-1);
-	// }
-	
-	auto num = 0;
-	auto maxi = 0;
-	while (true) {
-		// 这些可以全部集成一个函数
-		auto nfds = poller.get_numEvents(-1);
-		// auto nfds = epoll_wait(epollfd, events, 10, -1);
-		std::cout << nfds << std::endl;
-		if(nfds == -1) {
-			perror("error_wait");
-			exit(-1);
-		}
 
-		for(auto i = 0; i < nfds; ++i) {
-			if(events[i].data.fd == listenfd) {
-				auto socketfd = accept(listenfd, nullptr, nullptr);
-				std::cout << ++num <<" : " << socketfd << std::endl;
-				
-				if (socketfd > 0) {
-					read(socketfd, buffer, Maxsize);
-					write(socketfd, httpResponse.c_str(), httpResponse.size());
-					shutdown(socketfd, SHUT_RDWR);
-				}
-			}
-		}
-		
-	}
-	
+	mainPage = "<html><head><title>a light web server </title>"
+		"<link rel=\"icon\" href=\"data:; base64, =\">"
+		"</head>\n"
+		"<body><h1>this is "
+		"what you want</h1><p>"
+		"Hello World"
+		"</p></body></html>\n";
+
+	LOG_DEBUG << "test ";
+
+	server.setMessageCallback([&server](std::shared_ptr<Connection> conn, Buffer& buff) {
+		server.onMessage(conn, buff, mainPage);
+	});
+
+
+	LOG_INFO << "server starts";
+	server.start();
+
+	return 0;
 }

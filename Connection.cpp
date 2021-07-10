@@ -14,7 +14,7 @@ Connection::Connection(EventLoop& loop, int fd, const Address& hostAddr, Address
 
 
 Connection::~Connection() {
-	
+	assert(state_ == kDisconnected);
 }
 
 void Connection::handleRead() {
@@ -27,7 +27,7 @@ void Connection::handleRead() {
 		if (readLen > 0) {
 			inputBuffer_.write(buf, readLen);
 			LOG_TRACE << "read message from connection: " << channel_.fd() << " and length is " << readLen;
-			LOG_DEBUG << "inputBuffer string: " << inputBuffer_.readString();
+			LOG_WARN << "inputBuffer string: " << inputBuffer_.readString();
 			messagecallback_(shared_from_this(), inputBuffer_);
 		}
 		else if (readLen == 0) {
@@ -112,7 +112,6 @@ void Connection::handleError() {
 
 void Connection::connectEstablished() {
 	loop_->assertInLoopThread();
-	assert(state_ == kConnecting);
 	setState(kConnected);
 
 	// set fd;
@@ -122,10 +121,11 @@ void Connection::connectEstablished() {
 
 void Connection::connectDestroyed() {
 	loop_->assertInLoopThread();
-	assert(state_ == kConnected || kDisconnecting);
-	setState(kDisconnected);
-	channel_.disableReadAndWrite();
-	connectioncallback_(shared_from_this());
+	if (state_ == kConnected) {
+		setState(kDisconnected);
+		channel_.disableReadAndWrite();
+		closecallback_(shared_from_this());
+	}
 
 	loop_->removeChannel(channel_);
 }
@@ -138,7 +138,6 @@ void Connection::close() {
 	channel_.remove();
 	::shutdown(channel_.fd(), SHUT_RDWR);
 	state_ = kDisconnected;
-	LOG_DEBUG << "test close : state_ = " << state_;
 	loop_->queueInLoop([this]() {
 		closecallback_(shared_from_this());
 		});

@@ -26,12 +26,14 @@ void HttpServer::onConnection(const ConnectionPtr conn) {
 }
 
 void HttpServer::onRequest(const ConnectionPtr& conn, HttpRequest& request, const std::string& message) {
-	// const auto& connection = request.getHeader("Connection");
-	// const auto close = (connection == "close") || (request.version() == HttpRequest::kHttp10 && (connection != "Keep-Alive" || connection != "keep-alive"));
+	const auto connection = request.getHeader("Connection");
+	LOG_WARN << "connection : " << connection;
+	const auto close = (connection == "close") || (request.version() == HttpRequest::kHttp10 && (connection != "Keep-Alive" || connection != "keep-alive"));
+	LOG_WARN << "close = " << (close ? "true " : "false");
 	HttpResponse response;
 	response.setStatus(200);
 	response.setBody(message);
-	response.setCloseConnection(true);
+	response.setCloseConnection(close);
 	conn->send(response.tostring());
 	if(response.closeConnection()) {
 		conn->shutdown();
