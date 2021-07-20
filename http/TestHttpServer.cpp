@@ -3,7 +3,8 @@
 #include "HttpServer.h"
 
 #include "../base/Util.h"
-#include "../base/Logger.h"
+// #include "../base/Logger.h"
+#include "../base/AsyncLogging.h"
 
 #include "../EventLoop.h"
 #include "../Connection.h"
@@ -12,20 +13,17 @@
 #include <string>
 
 
-
-#include "HttpParse.h"
-#include "HttpRequest.h"
-#include "HttpResponse.h"
-// #include "../base/AsyncLogging.h"
-
 USE_NAMESPACE
 
 static std::string mainPage;
-// AsyncLogging* g_asyncLog = nullptr;
-// void asyncOutput(const char* msg, size_t len)
-// {
-// 	g_asyncLog->write(msg, len);
-// }
+
+AsyncLogging* g_asyncLog = nullptr;
+
+
+void asyncOutput(const char* msg, size_t len)
+{
+	g_asyncLog->write(msg, len);
+}
 
 int main() {
 
@@ -33,17 +31,18 @@ int main() {
 	::signal(SIGPIPE, SIG_IGN);
 	
 	// set log 
-	// std::string basename = "../../../Log/echo1.log";
-	// AsyncLogging log(basename);
-	// log.start();
-	// g_asyncLog = &log;
-	Logger::setLogLevel(Logger::LogLevel::WARN);
-	// Logger::setOutput(asyncOutput);
+	std::string basename = "../../../Log/echo2.log";
+	AsyncLogging log(basename);
+	log.start();
+	g_asyncLog = &log;
+	
+	Logger::setLogLevel(Logger::LogLevel::TRACE);
+	Logger::setOutput(asyncOutput);
 
 
 	// set http server
 	EventLoop loop;
-	HttpServer server(&loop, 23456, 4);
+	HttpServer server(&loop, 23456, 1);
 
 	server.setConnectionCallback([&server](std::shared_ptr<Connection> conn) {
 		LOG_DEBUG << "set connection callback";

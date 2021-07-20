@@ -24,29 +24,25 @@ Acceptor::Acceptor(EventLoop* loop, uint16_t port, const acceptCallback& callbac
 
 Acceptor::~Acceptor() {
 	// set from readable to disable all for channel
+	// only server disconnects, this desctor would be called
 	listenChannel_.disableReadAndWrite();
 	listenChannel_.remove();
-
-	// close listenfd;
 	Close(listenFd_);
 }
 
-void Acceptor::listen(int length) {
+void Acceptor::listen(int backlog) {
 	if(listenning_) {
 		LOG_FATAL << "sockfd is already in listening";
 	}
 	listenning_ = true;
-	Listen(listenFd_, length);
+	Listen(listenFd_, backlog);
 }
 
 
 void Acceptor::onAccept() {
 	LOG_TRACE << "add new conn";
 	while (true) {
-		
-		int connfd = Accept(listenFd_, peerAddress);
-		
-		// set_(connfd);		/* for test the function */
+		const auto connfd = Accept(listenFd_, peerAddress);
 		if (connfd > 0) {
 			setNonBlock(connfd);
 			LOG_INFO << "new connection from " << peerAddress.toString();

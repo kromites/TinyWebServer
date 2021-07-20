@@ -15,6 +15,11 @@ Connection::Connection(EventLoop& loop, int fd, const Address& hostAddr, Address
 
 Connection::~Connection() {
 	assert(state_ == kDisconnected);
+	// to fix
+	// channel_.disableReadAndWrite();
+	// channel_.remove();
+	LOG_WARN << "fd = " << channel_.fd() << " will be closed";
+	Close(channel_.fd());
 }
 
 void Connection::handleRead() {
@@ -27,7 +32,7 @@ void Connection::handleRead() {
 		if (readLen > 0) {
 			inputBuffer_.write(buf, readLen);
 			LOG_TRACE << "read message from connection: " << channel_.fd() << " and length is " << readLen;
-			LOG_WARN << "inputBuffer string: " << inputBuffer_.readString();
+			LOG_DEBUG << "inputBuffer string: " << inputBuffer_.readString();
 			messagecallback_(shared_from_this(), inputBuffer_);
 		}
 		else if (readLen == 0) {
@@ -133,14 +138,18 @@ void Connection::connectDestroyed() {
 void Connection::close() {
 	// close -> channel close
 	//		 -> state -> disconnected;
-
 	channel_.disableReadAndWrite();
 	channel_.remove();
+	// shutdown can't free socket and resource
+	// but close can, but close may be error, solve it.
+	// LOG_WARN << "CLOSE FD = " << channel_.fd();
 	::shutdown(channel_.fd(), SHUT_RDWR);
+	// Close(channel_.fd());
 	state_ = kDisconnected;
 	loop_->queueInLoop([this]() {
 		closecallback_(shared_from_this());
 		});
+	
 }
 
 
@@ -163,6 +172,7 @@ void Connection::shutdown() {
 		loop_->runInLoop([this]() { this->close(); });
 	}
 }
+
 
 
 void Connection::sendInloop(const std::string& message) {
@@ -204,10 +214,3 @@ const Address Connection::hostAddr() const {
 const Address Connection::peerAddr() const {
 	return peerAddr_;
 }
-
-// void Connection::shutdownInloop() {
-// 	loop_->assertInLoopThread();
-// 	if(!channel_.isWriting()) {
-// 		//todo shutdown writing.
-// 	}
-// }

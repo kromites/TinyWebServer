@@ -2,9 +2,6 @@
 
 USE_NAMESPACE
 
-LogStream::OutputFunc LogStream::output_ = [](std::string&& val) { std::cout << val << std::endl;  };
-
-
 LogStream::reference LogStream::operator<<(bool status) {
 	buffer_.append(status ? "1" : "0", 1);
 	return *this;

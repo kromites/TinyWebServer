@@ -97,9 +97,6 @@ public:
 	using SmallBuffer = LogBuffer<smallBufferSize>;
 public:
 	
-	~LogStream() {
-		output_(std::move(buffer_.data()));
-	}
 
 	void append(const char* str, int len) {
 		buffer_.append(str, len);
@@ -122,10 +119,6 @@ public:
 	reference operator<<(const std::string&);
 	reference operator<<(const SmallBuffer&);
 
-
-	static void setOutput(const OutputFunc& func) {
-		output_ = func;
-	}
 
 	const SmallBuffer& buffer() const { return buffer_; }
 	

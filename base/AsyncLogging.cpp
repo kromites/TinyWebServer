@@ -3,6 +3,7 @@
 #include <cassert>
 
 #include "LogFile.h"
+#include "Timestamp.h"
 
 USE_NAMESPACE
 
@@ -49,13 +50,17 @@ void AsyncLogging::setFileName(std::string& name) {
 
 void AsyncLogging::write(const char* logline, size_t len) {
 	// latch_.countDown();
+	// std::cout << "before mutex\n";
 	MutexLockGuard guard(mutex_);
+	// std::cout << "after mutex\n";
 	// if sizeof buffer > len then append
 	if(currentBuffer_->avail() > len) {
+		// std::cout << 1 << std::endl;
 		currentBuffer_->append(logline, len);
 	}
 	// else if buffer is full, push it and find the next spare buffer
 	else {
+		std::cout << 2 << std::endl;
 		buffers_.push_back(std::move(currentBuffer_));
 		if(nextBuffer_) {
 			currentBuffer_ = std::move(nextBuffer_);
@@ -79,7 +84,6 @@ void AsyncLogging::threadFunc() {
 	newBuffer2->bzero();
 	BufferVec buffersToWrite;
 	buffersToWrite.reserve(16);
-	
 	while(running_) {
 		assert(newBuffer1 && newBuffer1->length() == 0);
 		assert(newBuffer2 && newBuffer2->length() == 0);
@@ -88,20 +92,21 @@ void AsyncLogging::threadFunc() {
 		// critical section
 		{
 			MutexLockGuard guard(mutex_);
-			while (buffers_.empty()) {
+			// must use if, if use while, it would be blocked here.
+			if (buffers_.empty()) {
 				condition_.wait();
 			}
 			buffers_.push_back(std::move(currentBuffer_));
-			currentBuffer_ = std::move(newBuffer2);
+			currentBuffer_ = std::move(newBuffer1);
 			buffersToWrite.swap(buffers_);
 			if (nextBuffer_ == nullptr) {
 				nextBuffer_ = std::move(newBuffer2);
 			}
 		}
-
 		assert(!buffersToWrite.empty());
 
 		if(buffersToWrite.size() > 10) {
+			
 			buffersToWrite.erase(buffersToWrite.begin() + 2, buffersToWrite.end());
 		}
 		
@@ -116,12 +121,14 @@ void AsyncLogging::threadFunc() {
 		}
 
 		if(newBuffer1 == nullptr) {
+			assert(!buffersToWrite.empty());
 			newBuffer1 = std::move(buffersToWrite.back());
 			buffersToWrite.pop_back();
 			newBuffer1.reset();
 		}
 
 		if(newBuffer2 == nullptr) {
+			assert(!buffersToWrite.empty());
 			newBuffer2 = std::move(buffersToWrite.back());
 			buffersToWrite.pop_back();
 			newBuffer2.reset();
@@ -130,6 +137,7 @@ void AsyncLogging::threadFunc() {
 		// clear
 		buffersToWrite.clear();
 		logFile.flush();
+		
 	}
 	// flush output
 	logFile.flush();

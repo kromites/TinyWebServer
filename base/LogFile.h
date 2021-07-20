@@ -15,6 +15,7 @@ public:
 	void write(const char* str, int len);
 	void flush();
 	
+	
 private:
 	void write_unlocked(const char* str, int len);
 	

@@ -31,7 +31,7 @@ void tinyWebSever::Listen(int listenfd, int maxLength) {
 void tinyWebSever::setNonBlock(int fd) {
 	auto flag = fcntl(fd, F_GETFL, 0);
 	if (flag < 0)
-		LOG_ERROR << "fcntl F_GETFL errors";
+		LOG_ERROR <<"fd = " << fd << " fcntl F_GETFL errors";
 
 	flag |= O_NONBLOCK;
 

@@ -65,7 +65,6 @@ public:
 	void connectDestroyed();
 
 	void close();
-
 	// add
 	void send(const char* message, size_t len) {
 		outputBuffer_.write(message, len);
@@ -77,7 +76,7 @@ public:
 
 	//thread safe
 	void shutdown();
-
+	void shutdownAndclose();
 
 	void setTcpNoDelay(bool on);
 

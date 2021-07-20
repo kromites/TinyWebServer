@@ -4,6 +4,8 @@
 #include <sys/resource.h>
 #include <unistd.h>
 
+#include "../LogFile.h"
+
 USE_NAMESPACE
 
 AsyncLogging* g_asyncLog = nullptr;
@@ -12,6 +14,7 @@ void asyncOutput(const char* msg, size_t len)
 {
     g_asyncLog->write(msg, len);
 }
+
 
 // void bench(bool longLog)
 // {
@@ -44,24 +47,20 @@ int main()
     //     setrlimit(RLIMIT_AS, &rl);
     // }
 
-
-    std::string basename = "../../../Log/testAsync2.log";
+    std::string basename = "../../../Log/testAsync3.log";
 	AsyncLogging log(basename);
     log.start();
     g_asyncLog = &log;
 
-
-    // bench(longLog);
-
     Logger::setOutput(asyncOutput);
+    
+	
 
     int cnt = 0;
-    const int kBatch = 1000;
+    const int kBatch = 10;
     std::string empty = " ";
-    std::string longStr(3000, 'X');
-    longStr += " ";
 
-    for (int t = 0; t < 30; ++t)
+    for (int t = 0; t < 300; ++t)
     {
         for (int i = 0; i < kBatch; ++i)
         {

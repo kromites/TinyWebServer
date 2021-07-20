@@ -99,9 +99,10 @@ Logger::Logger(SourceFile file, int line, bool toAbort): myLogger_(toAbort ? Log
 
 Logger::~Logger() {
 	myLogger_.finish();
+	const auto& buf = stream().buffer();
+	g_output(buf.data(), buf.length());
+	
 	if (myLogger_.level_ == LogLevel::FATAL) {
-		const auto& buf = stream().buffer();
-		g_output(buf.data(), buf.length());
 		g_flush();
 		abort();
 	}

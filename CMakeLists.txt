@@ -50,7 +50,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread" )
 #add_executable(testAtomic "base/test/testAtomic.cpp")
 #add_executable(testThread_joinAndDetach "base/test/testThread.cpp") 
 #add_executable(testLogger "base/test/testLogger.cpp" ${LOG} ${Thread} ${Util} ${ThreadSynchronization})
-#add_executable(testAsyncLogger "base/test/testAsyncLogger.cpp" ${AsyncLog} ${Util} ${Thread} ${ThreadSynchronization})
+add_executable(testAsyncLogger "base/test/testAsyncLogger.cpp" ${AsyncLog} ${Util} ${Thread} ${ThreadSynchronization})
 #add_executable(testFileUtil "base/test/testFileUtil.cpp" "base/FileUtil.h" "base/FileUtil.cpp" ${Util})
 #add_executable(testLogFile "base/test/testLogFile.cpp"  ${Util} ${LogFile} ${Thread} ${ThreadSynchronization} ${LOG})
 #add_executable(testParse "http/testParse.cpp")
@@ -89,6 +89,13 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread" )
 
 
 add_executable(Http "http/TestHttpServer.cpp" 
+					${HttpServer}
+					${Address} ${Acceptor} ${Buffer} ${Channel} ${Connection} 
+					${EventLoop} ${EventLoopThread} ${EventLoopThreadPool} 
+					${Poller} ${Socket} ${TcpServer}
+					${AsyncLog} ${Thread} ${ThreadSynchronization} ${Timestamp} ${Util})
+
+add_executable(Main "TinyWebServer.h" "TinyWebServer.cpp" 
 					${HttpServer}
 					${Address} ${Acceptor} ${Buffer} ${Channel} ${Connection} 
 					${EventLoop} ${EventLoopThread} ${EventLoopThreadPool} 
