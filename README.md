@@ -26,7 +26,10 @@
 
 - 自定义HTTP服务器：
 
-  `./Main [-t thread_numbers] [-p port] [-l log_file_path(should begin with '/')]`
+  ```shell
+  ./Main [-t thread_numbers] [-p port] [-l log_file_path(should begin with '/')]
+  ```
+  
   (该服务器下的日志文件放在Log目录之下)
 
 ## WebBench
